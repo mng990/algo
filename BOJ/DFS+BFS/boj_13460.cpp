@@ -116,20 +116,6 @@ void roll(vector<int>& NR, vector<int>& NB, int dir){
     return ;
 }
 
-void resetBoard(vector<int> nowR, vector<int> nowB,
-                vector<int> nextR, vector<int> nextB){
-
-    char prevData = board.at(nextR.at(0)).at(nextR.at(1));
-
-
-    swap(board.at(nowR.at(0)).at(nowR.at(1)),
-         board.at(nextR.at(0)).at(nextR.at(1)));
-
-
-    swap(board.at(nowB.at(0)).at(nowB.at(1)),
-         board.at(nextB.at(0)).at(nextB.at(1)));
-}
-
 void redrawBoard(vector<int> prevR, vector<int> prevB,
                 vector<int> nowR, vector<int> nowB){
 
@@ -196,18 +182,7 @@ void slide(){
 
             roll(nextR, nextB, dir);
 
-            //cout << "before" << endl;
-            //printBoard();
             redrawBoard(nextR, nextB, nowR, nowB);
-/*
-            cout << "CNT: " << nextR.at(2) << endl;
-            cout << "nowR: " << nowR.at(0) << " / " << nowR.at(1) <<endl;
-            cout << "nowB: " << nowB.at(0) << " / "<<nowB.at(1)<<endl;
-            cout << "nextR: " << nextR.at(0) << " / " << nextR.at(1) <<endl;
-            cout << "nextB: " << nextB.at(0) << " / " << nextB.at(1) << endl;
-
-            printBoard();
-*/
 
             if(blue == true){
                 blue = false;
