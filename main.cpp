@@ -2,248 +2,126 @@
 
 using namespace std;
 
-bool red = false, blue = false;
-int row, col, L, minCnt = -1;
-vector<vector<char>> board;
-vector<vector<int>> moveTo = {
-    { 1, 0}, {0,  1},
-    {-1, 0}, {0, -1}
-}; // down, right, up, left
+int N, C, M, nowC, ans = 0;
 
-vector<int> R, B; // (RY, RX, cnt), (BY, BX, cnt)
-queue<vector<vector<int>>> quePath;
 
-int visited[10][10][10][10] = {0,};
-// 2*N*M (x) N*M*N*M
+class deliveryData{
+public:
+    deliveryData(int _from, int _to, int _box)
+    {
+        from = _from;
+        to = _to;
+        box = _box;
+    }
+
+    int getFrom(){return from;}
+    int getTo()  {return to;  }
+    int getBox() {return box; }
+
+    bool operator < (deliveryData dd) const {
+        int dto = dd.getTo();
+        int dfrom = dd.getFrom();
+        int dbox = dd.getBox();
+
+
+        if(to != dto)
+            return to > dto;
+        if(from != dfrom)
+            return from > dfrom;
+        else
+            return box < dbox;
+    }
+
+
+
+    friend ostream& operator<<(ostream& os, deliveryData DD){
+        os << DD.getFrom() << " / " << DD.getTo() << " / " << DD.getBox();
+        return os;
+    }
+
+private:
+    int from;
+    int to;
+    int box;
+};
+
+vector<int> truck;
+vector<int> drop;
+vector<int> capacity;
+priority_queue<deliveryData> optimize_path;
+int cap[2001];
+// bill = {{from, to, #ofboxes}..}
+
 
 
 void input(){
-    cin >> row >> col;
+    cin >> N >> C >> M;
 
-    for(int i=0; i<row; i++){
-        vector<char> bRow;
-        for(int j=0; j<col; j++){
-            char mark;
-            cin >> mark;
+    for(int i=0; i < M; i++){
+        int from, to, box;
 
-            if(mark == 'R'){
-                R = vector<int>({i, j, 0});
-            }
-            if(mark == 'B'){
-                B = vector<int>({i, j, 0});
-            }
+        cin >> from >> to >> box;
 
-            bRow.push_back(mark);
-        }
-        board.push_back(bRow);
+        deliveryData* ptrDD = new deliveryData(from, to, box);
+
+        optimize_path.push(*ptrDD);
     }
+
+    truck.resize(N+1);
+    drop.resize(N+1);
+
+    for(int i=1; i<=N; i++) cap[i] = C;
 }
 
-bool goalCheck(vector<int> marble, int dir){
 
-    marble.at(0) += moveTo.at(dir).at(0);
-    marble.at(1) += moveTo.at(dir).at(1);
 
-    return board.at(marble.at(0)).at(marble.at(1)) == 'O';
-}
-
-bool blocked(vector<int> marble){
-    return board.at(marble.at(0)).at(marble.at(1)) != '.';
-}
-
-bool rangeCheck(int y, int x){
-    return (0 <= y && y < row) && (x <= 0 && x < col);
-}
-
-void printBoard(){
-    for(int i=0; i<row; i++){
-        for(int j=0; j<col; j++){
-            cout << board.at(i).at(j);
-        }
-        cout<<endl;
+void printTruck(){
+    for(int from=1; from < truck.size(); from++){
+        cout << truck.at(from) << " ";
     }
     cout << endl;
-
 }
 
-bool moveToMarble(vector<int>& marble, int dir, char color){
-    bool blockedM = false;
-    char prevData = board.at(marble.at(0)).at(marble.at(1)); // R 5,8
+void delivery(){
+    while(!optimize_path.empty()){
+        deliveryData dd = optimize_path.top();
+        int from = dd.getFrom(), to = dd.getTo(), box = dd.getBox();
+        int maxTruck = 0;
 
-    int prevY = marble.at(0), prevX = marble.at(1);
+        for(int i=from; i<to; i++)
+            maxTruck = max(maxTruck, truck[i]);
 
-    board.at(prevY).at(prevX) = '.';
-    marble.at(0) += moveTo.at(dir).at(0);
-    marble.at(1) += moveTo.at(dir).at(1); // 6,8
+        if(maxTruck + box > C)
+            box = C-maxTruck;
 
-    if(blocked(marble)){
-        marble.at(0) -= moveTo.at(dir).at(0);
-        marble.at(1) -= moveTo.at(dir).at(1);
-        blockedM = true;
-    }
+        for(int i=from;i<to;i++)
+            truck.at(i) += box;
 
-    if(blockedM && !(goalCheck(marble, dir) && color == 'R')){
-        board.at(marble.at(0)).at(marble.at(1)) = prevData;
-    }
-    else if(!blockedM){
-        board.at(marble.at(0)).at(marble.at(1)) = color;
-    }
+        ans += box;
 
-    return blockedM;
-}
-
-void roll(vector<int>& NR, vector<int>& NB, int dir){
-
-    vector<int> prevR;
-    vector<int> prevB;
-    bool blockedR;
-    bool blockedB;
-
-    while(true){
-        prevR = NR, prevB = NB;
-
-        blockedR = moveToMarble(NR, dir, 'R');
-        blockedB = moveToMarble(NB, dir, 'B'); // B: 8
-
-        if(blockedR && blockedB){
-            break;
-        }
-    }
-
-    red  = goalCheck(NR,dir);
-    blue = goalCheck(NB, dir);
-
-    return ;
-}
-
-void resetBoard(vector<int> nowR, vector<int> nowB,
-                vector<int> nextR, vector<int> nextB){
-
-    char prevData = board.at(nextR.at(0)).at(nextR.at(1));
-
-
-    swap(board.at(nowR.at(0)).at(nowR.at(1)),
-         board.at(nextR.at(0)).at(nextR.at(1)));
-
-
-    swap(board.at(nowB.at(0)).at(nowB.at(1)),
-         board.at(nextB.at(0)).at(nextB.at(1)));
-}
-
-void redrawBoard(vector<int> prevR, vector<int> prevB,
-                vector<int> nowR, vector<int> nowB){
-
-    board.at(prevR.at(0)).at(prevR.at(1)) = '.';
-    board.at(prevB.at(0)).at(prevB.at(1)) = '.';
-
-    board.at(nowR.at(0)).at(nowR.at(1)) = 'R';
-    board.at(nowB.at(0)).at(nowB.at(1)) = 'B';
-
-}
-
-
-void slide(){
-    vector<int> nowR = R;
-    vector<int> nowB = B;
-    int nowCnt = nowR.at(2);
-
-    visited[nowB.at(0)][nowB.at(1)][nowR.at(0)][nowR.at(1)] = 1;
-
-    for(int dir=0; dir<moveTo.size(); dir++){
-        vector<int> nextR = nowR;
-        vector<int> nextB = nowB;
-        nextR.at(2) = nowCnt+1;
-        blue = false; red = false;
-
-        roll(nextR, nextB, dir);
-        redrawBoard(nextR, nextB, nowR, nowB);
-
-        if(blue == true){
-            continue;
-        }
-
-        if(red){
-            minCnt = nextR.at(2);
-            return;
-        }
-
-        if(visited[nextB.at(0)][nextB.at(1)][nextR.at(0)][nextR.at(1)] == 0){
-            quePath.push(vector<vector<int>>({nextR, nextB}));
-            visited[nextB.at(0)][nextB.at(1)][nextR.at(0)][nextR.at(1)] = 1;
-        }
-    }
-
-    vector<int> prevR, prevB;
-
-    while(!quePath.empty()){
-        vector<vector<int>> now = quePath.front();
-
-        prevR = nowR;
-        prevB = nowB;
-
-        nowR = now.at(0);
-        nowB = now.at(1);
-        nowCnt = nowR.at(2);
-
-        redrawBoard(prevR, prevB, nowR, nowB);
-
-        for(int dir=0; dir<moveTo.size(); dir++){
-            vector<int> nextR = nowR;
-            vector<int> nextB = nowB;
-            nextR.at(2) = nowCnt+1;
-
-            if(nextR.at(2) > 10) return;
-
-            roll(nextR, nextB, dir);
-
-            //cout << "before" << endl;
-            //printBoard();
-            redrawBoard(nextR, nextB, nowR, nowB);
-/*
-            cout << "CNT: " << nextR.at(2) << endl;
-            cout << "nowR: " << nowR.at(0) << " / " << nowR.at(1) <<endl;
-            cout << "nowB: " << nowB.at(0) << " / "<<nowB.at(1)<<endl;
-            cout << "nextR: " << nextR.at(0) << " / " << nextR.at(1) <<endl;
-            cout << "nextB: " << nextB.at(0) << " / " << nextB.at(1) << endl;
-
-            printBoard();
-*/
-
-            if(blue == true){
-                blue = false;
-                red = false;
-                continue;
-            }
-
-            if(red){
-                minCnt = nextR.at(2);
-                return;
-            }
-
-            if(visited[nextB.at(0)][nextB.at(1)][nextR.at(0)][nextR.at(1)] == 0){
-
-                quePath.push(vector<vector<int>>({nextR, nextB}));
-                visited[nextB.at(0)][nextB.at(1)][nextR.at(0)][nextR.at(1)] = 1;
-            }
-
-        }
-
-        quePath.pop();
+        optimize_path.pop();
     }
 }
 
 void output(){
-    cout << minCnt << endl;
+    cout << ans <<endl;
 }
 
 void run(){
     input();
-    slide();
-    //test();
+    delivery();
     output();
 }
 
+void test(){
+    input();
+    delivery();
+    //printTruck();
+}
+
+
 int main(){
+    //sortTest();
     run();
     return 0;
 }
