@@ -13,7 +13,7 @@ struct tree{
 	int age;
 }typedef Tree;
 
-vector<Tree> forest;
+deque<Tree> forest;
 vector<vector<int>> spread = {
 	{-1, -1}, {-1, 0}, 
 	{-1, 1}, {0, -1},
@@ -22,11 +22,22 @@ vector<vector<int>> spread = {
 };
 
 bool forestSort(Tree left, Tree right){
-	return left.age < right.age;	
+	return left.age > right.age;	
 }
 
 bool rangeCheck(int y, int x){
 	return 1<=y && y<=N && 1<=x && x<=N;
+}
+
+void printYear(int k){
+	cout << "year: " << k << '\n';
+	for(int i=1; i<=N; i++){
+		for(int j=1; j<=N; j++){
+			cout << nutrients[i][j]<<' ';
+		}
+		cout << '\n';
+	}
+	cout << '\n';
 }
 
 int main(){
@@ -46,60 +57,58 @@ int main(){
 	for(int i=0; i<M; i++){
 		int tx, ty, age;
 		cin >> tx >> ty >> age; 
-		forest.push_back(Tree({ty, tx, age}));
+		forest.push_back({ty, tx, age});
 	}// x, y, z (나무의 위치 + 나이) 
 	
 	sort(forest.begin(), forest.end(), forestSort);
 	
 	// year section
+	int death = 0;
 	for(int i=0; i<K; i++){
-		vector<Tree> nextYear;
-		
-		for(int i=0; i<forest.size();i++){
-			int ty = forest.at(i).ty;
-			int tx = forest.at(i).tx;
+		printYear(i+1);
+
+		for(int i=forest.size()-1; i>=0; i--){
+			int ty = forest[i].ty;
+			int tx = forest[i].tx;
+			if(forest[i].age <= 0) continue;
 					
-			if(nutrients[ty][tx] < forest.at(i).age){
-				forest.at(i).age = -forest.at(i).age;
+			if(nutrients[ty][tx] < forest[i].age){
+				forest[i].age *= -1;
+				death++;
 			}
 			else{
-				nutrients[ty][tx] -= forest.at(i).age;
-				forest.at(i).age++;
+				nutrients[ty][tx] -= forest[i].age;
+				forest[i].age++;
 				
-				if(forest.at(i).age %5 == 0){
+				if(forest[i].age %5 == 0){
 					for(int i=0; i<spread.size(); i++){
-						int newY = ty + spread.at(i).at(0);
-						int newX = tx + spread.at(i).at(1);
+						int newY = ty + spread[i][0];
+						int newX = tx + spread[i][1];
 						
 						if(!rangeCheck(newY, newX)) continue;
 						
-						nextYear.push_back(Tree({newY, newX, 1}));
+						forest.push_back({newY, newX, 1});
 					}
 				}
 			}
 		}
 		
 		for(int i=0; i<forest.size();i++){
-			Tree tnow = forest.at(i);
-			if(tnow.age < 0){
-				nutrients[tnow.ty][tnow.tx] += -tnow.age/2;
+			if(forest[i].age < 0){
+				nutrients[forest[i].ty][forest[i].tx] += abs(forest[i].age)/2;
+				forest[i].age = 0;
 			} // summer
-			else{
-				nextYear.push_back(tnow);
-			}
 		}
+		
 		
 		for(int i=1; i<=N; i++){
 			for(int j=1; j<=N; j++){
 				nutrients[i][j] += S2D2[i][j];
 			}
 		}//winter
-			
-		forest.swap(nextYear);
-		//sort(forest.begin(), forest.end(), forestSort);
 	}
 	
 	//output section
-	cout << forest.size() << '\n';
+	cout << forest.size()-death << '\n';
 	return 0;
 }

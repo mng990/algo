@@ -15,46 +15,11 @@ vector<vector<int>> moveTo = {
 
 
 bool rangeCheck(int y, int x){
-	return 0<=y && y<row && 0<=x && x<row;
+	return 0<=y && y<row && 0<=x && x<col;
 }
 
-void BFS(int hours){
-	queue<pair<int,int>> queCheese;
-	
-	int startY = 0, startX = 0;
-	air[startY][startX] = hours;
-	queCheese.push(make_pair(startY, startX));
-	
-	while(!queCheese.empty()){
-		pair<int,int> now = queCheese.front();
-		int nowY = now.first;
-		int nowX = now.second;
-		
-		if(cheese[nowY][nowX] > 0){
-			vmelted.push_back(make_pair(nowY, nowX));
-			queCheese.pop();
-			continue;
-		}
-		
-		for(int i=0; i<moveTo.size(); i++){
-			int nextY = nowY + moveTo.at(i).at(0);
-			int nextX = nowX + moveTo.at(i).at(1);
-			
-			if(!rangeCheck(nextY,nextX)) continue;
-			if(air[nextY][nextX] == hours) continue;
-			
-			air[nextY][nextX] = hours;
-			queCheese.push(make_pair(nextY, nextX));	
-		}
-		
-		queCheese.pop();
-	}
-}
-
-
-
-void airGun(int nowY, int nowX, int hours){
-	air[nowY][nowX] = hours;
+void airGun(int nowY, int nowX){
+	air[nowY][nowX] = 1;
 	if(cheese[nowY][nowX]){
 		
 		vmelted.push_back(make_pair(nowY, nowX));
@@ -62,13 +27,13 @@ void airGun(int nowY, int nowX, int hours){
 	}
 	
 	for(int i=0; i<moveTo.size(); i++){
-		int nextY = nowY + moveTo.at(i).at(0);
-		int nextX = nowX + moveTo.at(i).at(1);
+		int nextY = nowY + moveTo[i][0];
+		int nextX = nowX + moveTo[i][1];
 		
 		if(!rangeCheck(nextY, nextX)) continue;
-		if(air[nextY][nextX] == hours) continue;
+		if(air[nextY][nextX]) continue;
 		
-		airGun(nextY, nextX, hours);
+		airGun(nextY, nextX);
 	}
 	
 	return ;
@@ -96,10 +61,11 @@ void run(){
 	
 	while(true){
 		int startY = 0, startX = 0;
+		
+		memset(&air[0][0], 0, sizeof(air));
 		vmelted.clear();
 		
-		//airGun(0,0, hours);
-		BFS(hours);
+		airGun(0,0);
 		
 		for(auto melted: vmelted){
 			int meltedY  = melted.first;
