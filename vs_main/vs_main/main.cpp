@@ -2,61 +2,47 @@
 
 using namespace std;
 
-int N, M;
-int Map[51][51] = { 0, };
-int DP[51][51] = { 0, };
-int visited[51][51] = { 0, };
-
-vector<pair<int, int>> moveTo = {
-	{0, 1},{ 1,0},
-	{0,-1},{-1,0}
-};
-
-bool rangeCheck(int y, int x) {
-	return 0 <= y && y < N && 0 <= x && x < M;
-}
+int T, W, ret = 0;
+int plum[1001] = { 0, };
+int DP[1001][31] = {0,};
 
 void input() {
-	cin >> N >> M;
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < M; j++) {
-			char data;
-			cin >> data;
-			if (data != 'H') Map[i][j] = data - '0';
-		}
+	cin >> T >> W;
+	for (int i = 1; i <= T; i++) {
+		cin >> plum[i];
 	}
 }
 
-int dfs(int nowY, int nowX) {
+void makeDP() {
+	for (int t = 1; t <= T; t++) {
+		for (int w = 0; w <= W; w++) {
+			if (DP[t][w] == 0) {
+				if (w > 0) DP[t][w] = max(DP[t - 1][w], DP[t][w - 1]);
+				else       DP[t][w] = DP[t - 1][w];
+			}
 
-	if (!rangeCheck(nowY, nowX) || Map[nowY][nowX] == 0) return 0;
-	if (visited[nowY][nowX]) {
-		cout << -1;
-		exit(0);
+			if ((w % 2) + 1== plum[t]) {
+				DP[t][w] = max(DP[t][w], DP[t - 1][w] + 1);
+			}
+			else if(w+1 <= W){
+				DP[t][w + 1] = max(DP[t][w+1], DP[t-1][w] + 1);
+			}
+		}
 	}
 
-	int& ret = DP[nowY][nowX];
-	if (ret) return ret;
-
-	int offset = Map[nowY][nowX];
-
-	visited[nowY][nowX] = 1;
-
-	for (int i = 0; i < moveTo.size(); i++) {
-		int nextY = nowY + offset * moveTo.at(i).first;
-		int nextX = nowX + offset * moveTo.at(i).second;
-
-		ret = max(ret, dfs(nextY, nextX) + 1);
+	for (int w = 0; w <= W; w++) {
+		ret = max(ret, DP[T][w]);
 	}
+}
 
-	visited[nowY][nowX] = 0;
-
-	return ret;
+void output() {
+	cout << ret;
 }
 
 void run() {
 	input();
-	cout << dfs(0, 0);
+	makeDP();
+	output();
 }
 
 int main() {
