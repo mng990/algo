@@ -13,8 +13,8 @@ int main(){
 	for(int i=0; i<N; i++){
 		cin >> num;
 		
-		for(top; top<=num; top++){
-			stk.push(top);
+		while(top <= num){
+			stk.push(top++);
 			output += "+\n";			
 		}
 		
